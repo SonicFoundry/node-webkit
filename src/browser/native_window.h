@@ -27,6 +27,7 @@
 #include "base/basictypes.h"
 #include "base/memory/ref_counted.h"
 #include "base/compiler_specific.h"
+#include "content/public/browser/render_view_host.h"
 #include "ui/gfx/image/image.h"
 #include "ui/gfx/native_widget_types.h"
 #include "ui/gfx/point.h"
@@ -97,6 +98,7 @@ class NativeWindow {
   virtual void SetTransparent() = 0;
   virtual bool IsTransparent() = 0;
   virtual void SetMenu(api::Menu* menu) = 0;
+  virtual void RenderViewCreated(content::RenderViewHost *render_view_host) = 0;
 
   // Toolbar related controls.
   enum TOOLBAR_BUTTON {

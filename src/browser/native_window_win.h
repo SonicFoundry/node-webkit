@@ -84,6 +84,7 @@ class NativeWindowWin : public NativeWindow,
                                        bool enabled) OVERRIDE;
   virtual void SetToolbarUrlEntry(const std::string& url) OVERRIDE;
   virtual void SetToolbarIsLoading(bool loading) OVERRIDE;
+  virtual void RenderViewCreated(content::RenderViewHost *render_view_host) OVERRIDE;
 
   // WidgetDelegate implementation.
   virtual views::View* GetContentsView() OVERRIDE;

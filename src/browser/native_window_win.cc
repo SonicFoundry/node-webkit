@@ -25,6 +25,7 @@
 #include "base/win/windows_version.h"
 #include "base/win/wrapped_window_proc.h"
 #include "chrome/browser/platform_util.h"
+#include "content/browser/renderer_host/render_widget_host_view_win.h"
 #include "content/nw/src/api/menu/menu.h"
 #include "content/nw/src/browser/native_window_toolbar_win.h"
 #include "content/nw/src/common/shell_switches.h"
@@ -338,36 +339,11 @@ bool NativeWindowWin::IsFullscreen() {
 void NativeWindowWin::SetTransparent() {
   is_transparent_ = true;
   
-  // Check for Windows Vista or higher, transparency isn't supported in 
-  // anything lower. 
-  if (base::win::GetVersion() < base::win::VERSION_VISTA) {
-    NOTREACHED() << "The operating system does not support transparency.";
-    is_transparent_ = false;
-    return;
-  }
-
-  // Check to see if composition is disabled, if so we have to throw an 
-  // error, there's no graceful recovery, yet. TODO: Graceful recovery.
-  BOOL enabled = FALSE;
-  HRESULT result = ::DwmIsCompositionEnabled(&enabled);
-  if (!enabled || !SUCCEEDED(result)) {
-    NOTREACHED() << "Windows DWM composition is not enabled, transparency is not supported.";
-    is_transparent_ = false;
-    return;
-  }
-
   // These override any other window settings, which isn't the greatest idea
   // however transparent windows (in Windows) are very tricky and are not 
   // usable with any other styles.
   SetWindowLong(window_->GetNativeWindow(), GWL_STYLE, WS_POPUP | WS_SYSMENU | WS_BORDER); 
-  SetWindowLong(window_->GetNativeWindow(), GWL_EXSTYLE , WS_EX_COMPOSITED);
-
-  MARGINS mgMarInset = { -1, -1, -1, -1 };
-  if(DwmExtendFrameIntoClientArea(window_->GetNativeWindow(), &mgMarInset) != S_OK) {
-    NOTREACHED() << "Windows DWM extending to client area failed, transparency is not supported.";
-    is_transparent_ = false;
-    return;
-  }
+  SetWindowLong(window_->GetNativeWindow(), GWL_EXSTYLE , WS_EX_LAYERED);
 
   // Send a message to swap frames and refresh contexts
   SetWindowPos(window_->GetNativeWindow(), NULL, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED);
@@ -713,6 +689,12 @@ void NativeWindowWin::OnViewWasResized() {
   }
   if (web_contents()->GetRenderViewHost()->GetView())
     web_contents()->GetRenderViewHost()->GetView()->SetClickthroughRegion(rgn);
+}
+
+void NativeWindowWin::RenderViewCreated(content::RenderViewHost *render_view_host) {
+  if (is_transparent_) {
+    ((content::RenderWidgetHostViewWin *)render_view_host->GetView())->SetLayeredWindow(window_->GetNativeWindow());
+  }
 }
 
 }  // namespace nw

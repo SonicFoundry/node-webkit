@@ -343,6 +343,7 @@ void Shell::RenderViewCreated(RenderViewHost* render_view_host) {
     DCHECK(view);
     view->SetBackground(background);
   }
+  window_->RenderViewCreated(render_view_host);
 }
 
 WebContents* Shell::OpenURLFromTab(WebContents* source,
