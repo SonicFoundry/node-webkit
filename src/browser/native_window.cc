@@ -69,7 +69,11 @@ NativeWindow::NativeWindow(content::Shell* shell,
     : shell_(shell),
       has_frame_(true),
       capture_page_helper_(NULL) {
-  manifest->GetBoolean(switches::kmFrame, &has_frame_);
+  bool transparent;
+  if(manifest->GetBoolean(switches::kmTransparent, &transparent) && transparent)
+    has_frame_ = false;
+  else
+    manifest->GetBoolean(switches::kmFrame, &has_frame_);
 
   LoadAppIconFromPackage(manifest);
 }
@@ -123,6 +127,13 @@ void NativeWindow::InitFromManifest(base::DictionaryValue* manifest) {
   if (manifest->GetBoolean(switches::kmKiosk, &kiosk) && kiosk) {
     SetKiosk(kiosk);
   }
+  bool transparent;
+  if (manifest->GetBoolean(switches::kmTransparent, &transparent) && transparent) {
+    SetTransparent();
+
+    /* Transparent windows cannot have toolbars or other window controls */
+    manifest->SetBoolean(switches::kmToolbar, false);
+  }
   bool toolbar = true;
   manifest->GetBoolean(switches::kmToolbar, &toolbar);
   if (toolbar) {
@@ -158,6 +169,10 @@ void NativeWindow::LoadAppIconFromPackage(base::DictionaryValue* manifest) {
     app_icon_ = ui::ResourceBundle::GetSharedInstance().
         GetNativeImageNamed(IDR_NW_DEFAULT_ICON);
   }
+}
+
+void NativeWindow::RenderViewCreated(content::RenderViewHost *render_view_host) {
+  // no default implementation
 }
 
 }  // namespace nw
