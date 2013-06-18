@@ -98,7 +98,7 @@ class NativeWindow {
   virtual void SetTransparent() = 0;
   virtual bool IsTransparent() = 0;
   virtual void SetMenu(api::Menu* menu) = 0;
-  virtual void RenderViewCreated(content::RenderViewHost *render_view_host) = 0;
+  virtual void RenderViewCreated(content::RenderViewHost *render_view_host);
 
   // Toolbar related controls.
   enum TOOLBAR_BUTTON {
