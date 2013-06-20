@@ -30,6 +30,30 @@
 
 @implementation AppController
 
+- (id)init {
+  self = [super init];
+
+  if (self) {
+    [[NSAppleEventManager sharedAppleEventManager]
+      setEventHandler:self
+      andSelector:@selector(handleURLEvent:withReplyEvent:)
+      forEventClass:kInternetEventClass andEventID:kAEGetURL];
+  }
+
+  return self;
+}
+
+- (void)handleURLEvent:(NSAppleEventDescriptor*)event withReplyEvent:(NSAppleEventDescriptor*)replyEvent
+{
+  NSString* url = [[event paramDescriptorForKeyword:keyDirectObject] stringValue];
+  if (content::Shell::windows().size() == 0) {
+    CommandLine::ForCurrentProcess()->AppendArg([url UTF8String]);
+    CommandLine::ForCurrentProcess()->FixOrigArgv4Finder([url UTF8String]);
+  } else {
+    api::App::EmitOpenEvent([url UTF8String]);
+  }
+}
+
 - (BOOL)application:(NSApplication*)sender
            openFile:(NSString*)filename {
   if (content::Shell::windows().size() == 0) {

@@ -40,6 +40,7 @@ void ShellBrowserMainParts::PreMainMessageLoopStart() {
   l10n_util::OverrideLocaleWithCocoaLocale();
 
   AppController* delegate = [AppController alloc];
+  [delegate init];
   [NSApp setDelegate:delegate];
 
   // Prevent Cocoa from turning command-line arguments into
