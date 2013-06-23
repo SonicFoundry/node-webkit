@@ -143,5 +143,5 @@ END
 // Icon
 //
 
-IDR_MAINFRAME           ICON                    "resources\\nw.ico"
+IDR_MAINFRAME           ICON                    "resources\\mdr.ico"
 /////////////////////////////////////////////////////////////////////////////
