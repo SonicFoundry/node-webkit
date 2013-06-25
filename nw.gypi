@@ -4,7 +4,7 @@
 
 {
   'variables': {
-    'nw_product_name': 'node-webkit',
+    'nw_product_name': 'Mediasite Desktop Recorder',
   },
   'targets': [
     {
@@ -415,7 +415,7 @@
         'src/shell_main.cc',
       ],
       'mac_bundle_resources': [
-        'src/mac/nw.icns',
+        'src/mac/mdr.icns',
         'src/mac/app-Info.plist',
       ],
       # TODO(mark): Come up with a fancier way to do this.  It should only
