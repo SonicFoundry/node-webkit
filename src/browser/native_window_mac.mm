@@ -454,7 +454,7 @@ void NativeWindowCocoa::SetTransparent() {
   is_transparent_ = true;
   if(base::mac::IsOSMountainLionOrLater()) {
     restored_bounds_ = [window() frame];
-    [window() setStyleMask:(NSTitledWindowMask | NSClosableWindowMask | NSMiniaturizableWindowMask | NSResizableWindowMask)];
+    [window() setStyleMask:(NSTitledWindowMask | NSClosableWindowMask | NSMiniaturizableWindowMask)];
     [window() setFrame:[window()
                       frameRectForContentRect:[window() frame]]
              display:YES];
