@@ -4,11 +4,12 @@
 
 {
   'variables': {
-    'nw_product_name': 'node-webkit',
+    'nw_product_name%': 'node-webkit',
+    'nw_product_short_name%': 'nw',
   },
   'targets': [
     {
-      'target_name': 'nw_lib',
+      'target_name': '<(nw_product_short_name)_lib',
       'type': 'static_library',
       'defines!': ['CONTENT_IMPLEMENTATION'],
       'variables': {
@@ -396,7 +397,7 @@
       ],
     },
     {
-      'target_name': 'nw',
+      'target_name': '<(nw_product_short_name)',
       'type': 'executable',
       'mac_bundle': 1,
       'defines!': ['CONTENT_IMPLEMENTATION'],
@@ -404,7 +405,7 @@
         'chromium_code': 1,
       },
       'dependencies': [
-        'nw_lib',
+        '<(nw_product_short_name)_lib',
         'nw_pak',
       ],
       'include_dirs': [
@@ -473,7 +474,7 @@
         ['OS=="mac"', {
           'product_name': '<(nw_product_name)',
           'dependencies!': [
-            'nw_lib',
+            '<(nw_product_short_name)_lib',
           ],
           'dependencies': [
             'nw_framework',
@@ -555,7 +556,7 @@
             '<(PRODUCT_DIR)/nw.pak'
           ],
           'dependencies': [
-            'nw_lib',
+            '<(nw_product_short_name)_lib',
           ],
           'include_dirs': [
             '../..',
