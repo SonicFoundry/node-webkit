@@ -24,6 +24,7 @@
 #include "base/files/file_path.h"
 #include "base/file_util.h"
 #include "base/string_util.h"
+#include "base/strings/string_number_conversions.h"
 #include "base/threading/thread_restrictions.h"
 #include "base/values.h"
 #include "content/public/browser/browser_url_handler.h"
@@ -47,9 +48,10 @@
 #include "content/nw/src/shell_browser_main_parts.h"
 #include "geolocation/shell_access_token_store.h"
 #include "googleurl/src/gurl.h"
+#include "ui/base/l10n/l10n_util.h"
+#include "webkit/dom_storage/dom_storage_map.h"
 #include "webkit/glue/webpreferences.h"
 #include "webkit/user_agent/user_agent_util.h"
-#include "ui/base/l10n/l10n_util.h"
 #include "webkit/plugins/npapi/plugin_list.h"
 
 
@@ -115,8 +117,16 @@ void ShellContentBrowserClient::AppendExtraCommandLineSwitches(
       content::RenderViewHost* host = content::RenderViewHost::From(
         const_cast<content::RenderWidgetHost*>(widget));
       content::Shell* shell = content::Shell::FromRenderViewHost(host);
-      if (shell && (shell->is_devtools() || !shell->nodejs()))
-        return;
+      if (shell) {
+        if (!shell->nodejs())
+          return;
+        if (shell->is_devtools()) {
+          // DevTools should have powerful permissions to load local
+          // files by XHR (e.g. for source map)
+          command_line->AppendSwitch(switches::kNodejs);
+          return;
+        }
+      }
     }
   }
   nw::Package* package = shell_browser_main_parts()->package();
@@ -136,6 +146,12 @@ void ShellContentBrowserClient::AppendExtraCommandLineSwitches(
     std::string snapshot_path;
     if (package->root()->GetString(switches::kSnapshot, &snapshot_path))
       command_line->AppendSwitchASCII(switches::kSnapshot, snapshot_path);
+
+    int dom_storage_quota_mb;
+    if (package->root()->GetInteger("dom_storage_quota", &dom_storage_quota_mb)) {
+      dom_storage::DomStorageMap::SetQuotaOverride(dom_storage_quota_mb * 1024 * 1024);
+      command_line->AppendSwitchASCII(switches::kDomStorageQuota, base::IntToString(dom_storage_quota_mb));
+    }
   }
 
   // without the switch, the destructor of the shell object will

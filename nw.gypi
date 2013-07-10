@@ -378,7 +378,7 @@
       ],
     },
     {
-      'target_name': 'nw_package_bin',
+      'target_name': 'dist',
       'type': 'none',
       'actions': [
         {
@@ -430,13 +430,6 @@
       },
       'msvs_settings': {
         'VCLinkerTool': {
-          'AdditionalOptions': [
-            "\"/manifestdependency:type='win32' "
-                "name='Microsoft.Windows.Common-Controls' "
-                "version='6.0.0.0' "
-                "processorArchitecture='*' "
-                "publicKeyToken='6595b64144ccf1df' language='*'\"",
-          ],
           'SubSystem': '2',  # Set /SUBSYSTEM:WINDOWS
         },
       },

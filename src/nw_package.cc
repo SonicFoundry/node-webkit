@@ -42,7 +42,6 @@
 #include "ui/base/resource/resource_bundle.h"
 #include "ui/gfx/image/image.h"
 #include "ui/gfx/image/image_skia_rep.h"
-#include "webkit/dom_storage/dom_storage_map.h"
 #include "webkit/glue/image_decoder.h"
 
 bool IsSwitch(const CommandLine::StringType& string,
@@ -131,7 +130,7 @@ Package::Package()
   if (InitFromPath())
     return;
 
-  // Next try to load from the folder where the exe resides.
+  // Try to load from the folder where the exe resides.
   // Note: self_extract_ is true here, otherwise a 'Invalid Package' error
   // would be triggered.
   path_ = GetSelfPath().DirName();
@@ -140,15 +139,17 @@ Package::Package()
 #endif
   if (InitFromPath())
     return;
-  
+
+  path_ = path_.AppendASCII("package.nw");
+  if (InitFromPath())
+    return;
+
   // Then see if we have arguments and extract it.
   CommandLine* command_line = CommandLine::ForCurrentProcess();
   const CommandLine::StringVector& args = command_line->GetArgs();
   if (args.size() > 0) {
     self_extract_ = false;
     path_ = FilePath(args[0]);
-    if (InitFromPath())
-      return;
   }
 
   // Finally we init with default settings.
@@ -306,12 +307,6 @@ bool Package::InitFromPath() {
       CommandLine* command_line = CommandLine::ForCurrentProcess();
       command_line->AppendSwitchASCII(switches::kAudioBufferSize, bufsz_str);
     }
-  }
-
-  int dom_storage_quota_mb = 0;
-  if (root_->GetInteger("dom_storage_quota", &dom_storage_quota_mb) &&
-      dom_storage_quota_mb > 0) {
-    dom_storage::DomStorageMap::SetQuotaOverride(dom_storage_quota_mb * 1024 * 1024);
   }
 
   // Read chromium command line args.

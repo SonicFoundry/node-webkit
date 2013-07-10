@@ -25,6 +25,7 @@
 #include "base/file_util.h"
 #include "base/logging.h"
 #include "base/string16.h"
+#include "base/strings/string_number_conversions.h"
 #include "base/utf_string_conversions.h"
 #include "components/autofill/renderer/page_click_tracker.h"
 #include "content/nw/src/api/dispatcher.h"
@@ -51,6 +52,7 @@
 #include "third_party/WebKit/Source/WebKit/chromium/public/WebSecurityPolicy.h"
 #include "third_party/WebKit/Source/WebKit/chromium/public/WebView.h"
 //#include "third_party/WebKit/Source/WebKit/chromium/public/platform/WebString.h"
+#include "webkit/dom_storage/dom_storage_map.h"
 
 using content::RenderView;
 using content::RenderViewImpl;
@@ -59,6 +61,9 @@ using autofill::PasswordAutofillAgent;
 using net::ProxyBypassRules;
 using WebKit::WebFrame;
 using WebKit::WebView;
+using WebKit::WebString;
+using WebKit::WebSecurityPolicy;
+
 
 namespace content {
 
@@ -113,6 +118,14 @@ void ShellContentRendererClient::RenderThreadStarted() {
   if (command_line->HasSwitch(switches::kSnapshot)) {
     snapshot_path = command_line->GetSwitchValuePath(switches::kSnapshot).AsUTF8Unsafe();
   }
+
+  if (command_line->HasSwitch(switches::kDomStorageQuota)) {
+    std::string quota_str = command_line->GetSwitchValueASCII(switches::kDomStorageQuota);
+    int quota = 0;
+    if (base::StringToInt(quota_str, &quota) && quota > 0) {
+      dom_storage::DomStorageMap::SetQuotaOverride(quota * 1024 * 1024);
+    }
+  }
   // Initialize node after render thread is started.
   if (!snapshot_path.empty()) {
     v8::V8::Initialize(snapshot_path.c_str());
@@ -132,11 +145,18 @@ void ShellContentRendererClient::RenderThreadStarted() {
   node::g_context->SetSecurityToken(v8::String::NewSymbol("nw-token", 8));
   node::g_context->Enter();
 
+  node::g_context->SetEmbedderData(0, v8::String::NewSymbol("node"));
+
   // Setup node.js.
   node::SetupContext(argc, argv, node::g_context->Global());
 
   // Start observers.
   shell_observer_.reset(new ShellRenderProcessObserver());
+
+  WebString file_scheme(ASCIIToUTF16("file"));
+  // file: resources should be allowed to receive CORS requests.
+  WebSecurityPolicy::registerURLSchemeAsCORSEnabled(file_scheme);
+
 }
 
 void ShellContentRendererClient::RenderViewCreated(RenderView* render_view) {
