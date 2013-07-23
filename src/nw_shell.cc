@@ -361,7 +361,6 @@ void Shell::ShowDevTools(const char* jail_id, bool headless) {
   WebContents::CreateParams create_params(web_contents()->GetBrowserContext(), NULL);
   WebContents* web_contents = WebContents::Create(create_params);
   Shell* shell = new Shell(web_contents, &manifest);
-  browser_context->set_pinning_renderer(true);
 
   int rh_id = shell->web_contents_->GetRenderProcessHost()->GetID();
   ChildProcessSecurityPolicyImpl::GetInstance()->GrantScheme(rh_id, chrome::kFileScheme);
@@ -369,6 +368,9 @@ void Shell::ShowDevTools(const char* jail_id, bool headless) {
   shell->force_close_ = true;
   shell->LoadURL(url);
 
+  // LoadURL() could allocate new SiteInstance so we have to pin the
+  // renderer after it
+  browser_context->set_pinning_renderer(true);
   // Save devtools window in current shell.
   devtools_window_ = shell->weak_ptr_factory_.GetWeakPtr();
 #endif
@@ -563,6 +565,12 @@ void Shell::Observe(int type,
 #endif
     MessageLoop::current()->PostTask(FROM_HERE, MessageLoop::QuitClosure());
   }
+}
+
+GURL Shell::OverrideDOMStorageOrigin(const GURL& origin) {
+  if (!is_devtools())
+    return origin;
+  return GURL("devtools://");
 }
 
 }  // namespace content
