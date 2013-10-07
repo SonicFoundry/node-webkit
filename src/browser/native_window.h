@@ -97,6 +97,8 @@ class NativeWindow {
   virtual bool IsKiosk() = 0;
   virtual void SetTransparent() = 0;
   virtual bool IsTransparent() = 0;
+  virtual void SetToolwindow() = 0;
+  virtual bool IsToolwindow() = 0;
   virtual void SetMenu(api::Menu* menu) = 0;
   virtual void RenderViewCreated(content::RenderViewHost *render_view_host);
 

@@ -134,6 +134,10 @@ void NativeWindow::InitFromManifest(base::DictionaryValue* manifest) {
     /* Transparent windows cannot have toolbars or other window controls */
     manifest->SetBoolean(switches::kmToolbar, false);
   }
+  bool toolwindow;
+  if (manifest->GetBoolean(switches::kmToolwindow, &toolwindow) && toolwindow) {
+      SetToolwindow();
+  }
   bool toolbar = true;
   manifest->GetBoolean(switches::kmToolbar, &toolbar);
   if (toolbar) {

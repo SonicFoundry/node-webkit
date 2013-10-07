@@ -147,6 +147,8 @@ void Window::CallSync(const std::string& method,
     result->AppendBoolean(shell_->window()->IsKiosk());
   } else if (method == "IsTransparent") {
     result->AppendBoolean(shell_->window()->IsTransparent());
+  } else if (method == "IsToolwindow") {
+    result->AppendBoolean(shell_->window()->IsToolwindow());
   } else if (method == "GetSize") {
     gfx::Size size = shell_->window()->GetSize();
     result->AppendInteger(size.width());

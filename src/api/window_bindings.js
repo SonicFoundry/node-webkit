@@ -181,6 +181,11 @@ Window.prototype.__defineGetter__('isTransparent', function() {
   return Boolean(result[0]);
 });
 
+Window.prototype.__defineGetter__('isToolwindow', function () {
+    var result = CallObjectMethodSync(this, 'IsToolwindow', []);
+    return Boolean(result[0]);
+});
+
 Window.prototype.__defineSetter__('isKioskMode', function(flag) {
   if (flag)
     this.enterKioskMode();

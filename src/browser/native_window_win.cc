@@ -354,6 +354,16 @@ bool NativeWindowWin::IsTransparent() {
   return is_transparent_;
 }
 
+void NativeWindowWin::SetToolwindow() {
+    LONG exStyle = GetWindowLong(window_->GetNativeWindow(), GWL_EXSTYLE);
+    SetWindowLong(window_->GetNativeWindow(), GWL_EXSTYLE , exStyle | WS_EX_TOOLWINDOW);
+    is_toolwindow_ = true;
+}
+
+bool NativeWindowWin::IsToolwindow() {
+    return is_toolwindow_;
+}
+
 void NativeWindowWin::SetSize(const gfx::Size& size) {
   window_->SetSize(size);
 }

@@ -79,6 +79,8 @@ class NativeWindowWin : public NativeWindow,
   virtual bool IsKiosk() OVERRIDE;
   virtual void SetTransparent() OVERRIDE;
   virtual bool IsTransparent() OVERRIDE;
+  virtual void SetToolwindow() OVERRIDE;
+  virtual bool IsToolwindow() OVERRIDE;
   virtual void SetMenu(api::Menu* menu) OVERRIDE;
   virtual void SetToolbarButtonEnabled(TOOLBAR_BUTTON button,
                                        bool enabled) OVERRIDE;
@@ -135,6 +137,7 @@ class NativeWindowWin : public NativeWindow,
   views::Widget* window_;
   bool is_fullscreen_;
   bool is_transparent_;
+  bool is_toolwindow_;
 
   // Flags used to prevent sending extra events.
   bool is_minimized_;
