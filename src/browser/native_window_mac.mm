@@ -514,6 +514,14 @@ bool NativeWindowCocoa::IsTransparent() {
   return is_transparent_;
 }
 
+void NativeWindowCocoa::SetToolwindow() {
+  // do nothing for now
+}
+
+bool NativeWindowCocoa::IsToolwindow() {
+  return is_toolwindow_;
+}
+
 void NativeWindowCocoa::SetNonLionFullscreen(bool fullscreen) {
   if (fullscreen == is_fullscreen_)
     return;
