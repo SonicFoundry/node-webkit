@@ -73,6 +73,7 @@ const char kmAsDesktop[]  = "as_desktop";
 const char kmFullscreen[] = "fullscreen";
 const char kmTransparent[] = "transparent";
 const char kmToolwindow[] = "toolwindow";
+const char kmInitialFocus[] = "focus";
 
 // Start with the kiosk mode, see Opera's page for description:
 // http://www.opera.com/support/mastering/kiosk/

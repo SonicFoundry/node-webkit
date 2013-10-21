@@ -18,7 +18,7 @@
 // ETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 //  CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-var argv, fullArgv, dataPath;
+var argv, fullArgv, dataPath, manifest;
 
 function App() {
 }
@@ -78,9 +78,17 @@ App.prototype.__defineGetter__('fullArgv', function() {
 
 App.prototype.__defineGetter__('dataPath', function() {
   if (!dataPath)
-    dataPath = nw.callStaticMethodSync('App', 'GetDataPath', [ ]);
+    dataPath = nw.callStaticMethodSync('App', 'GetDataPath', [ ])[0];
 
   return dataPath;
+});
+
+App.prototype.__defineGetter__('manifest', function() {
+  if (!manifest) {
+    manifest = JSON.parse(
+        nw.callStaticMethodSync('App', 'GetPackage', [ ])[0]);
+  }
+  return manifest;
 });
 
 // Store App object in node's context.

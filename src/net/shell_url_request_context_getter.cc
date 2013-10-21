@@ -28,6 +28,7 @@
 #include "content/public/common/url_constants.h"
 #include "content/nw/src/net/shell_network_delegate.h"
 #include "content/public/browser/cookie_store_factory.h"
+#include "content/nw/src/net/app_protocol_handler.h"
 #include "content/nw/src/nw_protocol_handler.h"
 #include "content/nw/src/nw_shell.h"
 #include "net/cert/cert_verifier.h"
@@ -46,11 +47,14 @@
 #include "net/proxy/proxy_script_fetcher_impl.h"
 #include "net/proxy/proxy_service.h"
 #include "net/proxy/proxy_service_v8.h"
+#include "net/url_request/file_protocol_handler.h"
 #include "net/url_request/protocol_intercept_job_factory.h"
 #include "net/url_request/static_http_user_agent_settings.h"
 #include "net/url_request/url_request_context.h"
 #include "net/url_request/url_request_context_storage.h"
 #include "net/url_request/url_request_job_factory_impl.h"
+
+using base::MessageLoop;
 
 namespace content {
 
@@ -74,12 +78,14 @@ void InstallProtocolHandlers(net::URLRequestJobFactoryImpl* job_factory,
 
 ShellURLRequestContextGetter::ShellURLRequestContextGetter(
     bool ignore_certificate_errors,
-    const FilePath& base_path,
+    const FilePath& data_path,
+    const FilePath& root_path,
     MessageLoop* io_loop,
     MessageLoop* file_loop,
     ProtocolHandlerMap* protocol_handlers)
     : ignore_certificate_errors_(ignore_certificate_errors),
-      base_path_(base_path),
+      data_path_(data_path),
+      root_path_(root_path),
       io_loop_(io_loop),
       file_loop_(file_loop) {
   // Must first be created on the UI thread.
@@ -108,7 +114,7 @@ net::URLRequestContext* ShellURLRequestContextGetter::GetURLRequestContext() {
     storage_.reset(
         new net::URLRequestContextStorage(url_request_context_.get()));
 
-    FilePath cookie_path = base_path_.Append(FILE_PATH_LITERAL("cookies"));
+    FilePath cookie_path = data_path_.Append(FILE_PATH_LITERAL("cookies"));
     scoped_refptr<net::CookieStore> cookie_store = NULL;
     cookie_store = content::CreatePersistentCookieStore(
         cookie_path,
@@ -117,6 +123,9 @@ net::URLRequestContext* ShellURLRequestContextGetter::GetURLRequestContext() {
         NULL);
     cookie_store->GetCookieMonster()->SetPersistSessionCookies(true);
     storage_->set_cookie_store(cookie_store);
+
+    const char* schemes[] = {"app"};
+    cookie_store->GetCookieMonster()->SetCookieableSchemes(schemes, 1);
 
     storage_->set_server_bound_cert_service(new net::ServerBoundCertService(
         new net::DefaultServerBoundCertStore(NULL),
@@ -128,6 +137,7 @@ net::URLRequestContext* ShellURLRequestContextGetter::GetURLRequestContext() {
         net::HostResolver::CreateDefaultResolver(NULL));
 
     storage_->set_cert_verifier(net::CertVerifier::CreateDefault());
+    storage_->set_transport_security_state(new net::TransportSecurityState);
 
     net::ProxyService* proxy_service;
     net::DhcpProxyScriptFetcherFactory dhcp_factory;
@@ -146,18 +156,21 @@ net::URLRequestContext* ShellURLRequestContextGetter::GetURLRequestContext() {
         net::HttpAuthHandlerFactory::CreateDefault(host_resolver.get()));
     storage_->set_http_server_properties(new net::HttpServerPropertiesImpl);
 
-    FilePath cache_path = base_path_.Append(FILE_PATH_LITERAL("Cache"));
+    FilePath cache_path = data_path_.Append(FILE_PATH_LITERAL("Cache"));
     net::HttpCache::DefaultBackend* main_backend =
         new net::HttpCache::DefaultBackend(
             net::DISK_CACHE,
+            net::CACHE_BACKEND_SIMPLE,
             cache_path,
-            0,
+            10 * 1024 * 1024,  // 10M
             BrowserThread::GetMessageLoopProxyForThread(
                 BrowserThread::CACHE));
 
     net::HttpNetworkSession::Params network_session_params;
     network_session_params.cert_verifier =
         url_request_context_->cert_verifier();
+    network_session_params.transport_security_state =
+        url_request_context_->transport_security_state();
     network_session_params.server_bound_cert_service =
         url_request_context_->server_bound_cert_service();
     network_session_params.proxy_service =
@@ -185,7 +198,12 @@ net::URLRequestContext* ShellURLRequestContextGetter::GetURLRequestContext() {
     scoped_ptr<net::URLRequestJobFactoryImpl> job_factory(
         new net::URLRequestJobFactoryImpl());
     InstallProtocolHandlers(job_factory.get(), &protocol_handlers_);
+    job_factory->SetProtocolHandler(chrome::kFileScheme,
+                                    new net::FileProtocolHandler);
+    job_factory->SetProtocolHandler("app",
+                                    new net::AppProtocolHandler(root_path_));
     job_factory->SetProtocolHandler("nw", new nw::NwProtocolHandler());
+
     storage_->set_job_factory(job_factory.release());
 
   }

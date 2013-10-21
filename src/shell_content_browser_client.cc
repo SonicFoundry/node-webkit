@@ -51,9 +51,9 @@
 #include "geolocation/shell_access_token_store.h"
 #include "googleurl/src/gurl.h"
 #include "ui/base/l10n/l10n_util.h"
-#include "webkit/dom_storage/dom_storage_map.h"
-#include "webkit/glue/webpreferences.h"
-#include "webkit/user_agent/user_agent_util.h"
+#include "webkit/common/dom_storage/dom_storage_map.h"
+#include "webkit/common/webpreferences.h"
+#include "webkit/common/user_agent/user_agent_util.h"
 #include "webkit/plugins/npapi/plugin_list.h"
 
 
@@ -92,6 +92,8 @@ WebContentsViewPort* ShellContentBrowserClient::OverrideCreateWebContentsView(
   }
   if (package->root()->GetString(switches::kmRemotePages, &rules))
       prefs->nw_remote_page_rules = rules;
+
+  prefs->nw_app_root_path = package->path();
   return NULL;
 }
 
@@ -105,16 +107,16 @@ void ShellContentBrowserClient::AppendExtraCommandLineSwitches(
   if (command_line->GetSwitchValueASCII("type") != "renderer")
     return;
   if (child_process_id > 0) {
-    content::RenderProcessHost* rph =
-      content::RenderProcessHost::FromID(child_process_id);
-
-    content::RenderProcessHost::RenderWidgetHostsIterator iter(
-      rph->GetRenderWidgetHostsIterator());
-    for (; !iter.IsAtEnd(); iter.Advance()) {
-      const content::RenderWidgetHost* widget = iter.GetCurrentValue();
-      DCHECK(widget);
-      if (!widget || !widget->IsRenderView())
+    content::RenderWidgetHost::List widgets =
+      content::RenderWidgetHost::GetRenderWidgetHosts();
+    for (size_t i = 0; i < widgets.size(); ++i) {
+      if (widgets[i]->GetProcess()->GetID() != child_process_id)
         continue;
+      if (!widgets[i]->IsRenderView())
+        continue;
+
+      const content::RenderWidgetHost* widget = widgets[i];
+      DCHECK(widget);
 
       content::RenderViewHost* host = content::RenderViewHost::From(
         const_cast<content::RenderWidgetHost*>(widget));
@@ -290,9 +292,58 @@ void ShellContentBrowserClient::RenderProcessHostCreated(
   // per-view access checks.
   content::ChildProcessSecurityPolicy::GetInstance()->GrantScheme(
       host->GetID(), chrome::kFileScheme);
+  content::ChildProcessSecurityPolicy::GetInstance()->GrantScheme(
+      host->GetID(), "app");
 
 #if defined(ENABLE_PRINTING)
   host->GetChannel()->AddFilter(new PrintingMessageFilter(id));
 #endif
 }
+
+bool ShellContentBrowserClient::IsHandledURL(const GURL& url) {
+  if (!url.is_valid())
+    return false;
+  DCHECK_EQ(url.scheme(), StringToLowerASCII(url.scheme()));
+  // Keep in sync with ProtocolHandlers added by
+  // ShellURLRequestContextGetter::GetURLRequestContext().
+  static const char* const kProtocolList[] = {
+    chrome::kFileSystemScheme,
+    chrome::kFileScheme,
+    "app",
+  };
+  for (size_t i = 0; i < arraysize(kProtocolList); ++i) {
+    if (url.scheme() == kProtocolList[i])
+      return true;
+  }
+  return false;
+}
+
+void ShellContentBrowserClient::AllowCertificateError(
+    int render_process_id,
+    int render_view_id,
+    int cert_error,
+    const net::SSLInfo& ssl_info,
+    const GURL& request_url,
+    ResourceType::Type resource_type,
+    bool overridable,
+    bool strict_enforcement,
+    const base::Callback<void(bool)>& callback,
+    content::CertificateRequestResultType* result) {
+  VLOG(1) << "AllowCertificateError: " << request_url;
+  CommandLine* cmd_line = CommandLine::ForCurrentProcess();
+  if (cmd_line->HasSwitch(switches::kIgnoreCertificateErrors)) {
+    *result = content::CERTIFICATE_REQUEST_RESULT_TYPE_CONTINUE;
+  }
+  else
+    *result = content::CERTIFICATE_REQUEST_RESULT_TYPE_DENY;
+  return;
+}
+
+void ShellContentBrowserClient::GetAdditionalAllowedSchemesForFileSystem(
+    std::vector<std::string>* additional_allowed_schemes) {
+  ContentBrowserClient::GetAdditionalAllowedSchemesForFileSystem(
+      additional_allowed_schemes);
+  additional_allowed_schemes->push_back("app");
+}
+
 }  // namespace content

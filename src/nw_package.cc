@@ -26,6 +26,7 @@
 #include "base/file_util.h"
 #include "base/files/scoped_temp_dir.h"
 #include "base/json/json_file_value_serializer.h"
+#include "base/json/json_string_value_serializer.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_tokenizer.h"
 #include "base/string_util.h"
@@ -202,7 +203,7 @@ bool Package::GetImage(const FilePath& icon_path, gfx::Image* image) {
 }
 
 GURL Package::GetStartupURL() {
-  std::string url; 
+  std::string url;
   // Specify URL in --url
   CommandLine* command_line = CommandLine::ForCurrentProcess();
   if (command_line->HasSwitch(switches::kUrl)) {
@@ -219,9 +220,10 @@ GURL Package::GetStartupURL() {
     return GURL(error_page_url_);
 
   // Read from manifest.
-  if (root()->GetString(switches::kmMain, &url))
+  if (root()->GetString(switches::kmMain, &url)) {
+    VLOG(1) << "Package startup URL: " << GURL(url);
     return GURL(url);
-  else
+  }else
     return GURL("nw:blank");
 }
 
@@ -279,6 +281,13 @@ bool Package::InitFromPath() {
 
   // Save result in global
   root_.reset(static_cast<DictionaryValue*>(root.release()));
+
+  // Save origin package info
+  // Since we will change some value in root_,
+  // We need to catch the origin value of package.json
+  package_string_ = "";
+  JSONStringValueSerializer stringSerializer(&package_string_);
+  stringSerializer.Serialize(*root_);
 
   // Check fields
   const char* required_fields[] = {

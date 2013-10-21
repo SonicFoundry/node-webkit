@@ -18,8 +18,7 @@
       'dependencies': [
         '<(DEPTH)/base/base.gyp:base',
         '<(DEPTH)/base/third_party/dynamic_annotations/dynamic_annotations.gyp:dynamic_annotations',
-        '<(DEPTH)/build/temp_gyp/googleurl.gyp:googleurl',
-        '<(DEPTH)/components/components.gyp:autofill_renderer',
+        '<(DEPTH)/components/components.gyp:autofill_content_renderer',
         '<(DEPTH)/content/content.gyp:content_app',
         '<(DEPTH)/content/content.gyp:content_browser',
         '<(DEPTH)/content/content.gyp:content_common',
@@ -39,16 +38,17 @@
         '<(DEPTH)/third_party/node/node.gyp:node',
         '<(DEPTH)/ui/ui.gyp:ui',
         '<(DEPTH)/ui/ui.gyp:ui_resources',
+        '<(DEPTH)/url/url.gyp:url_lib',
         '<(DEPTH)/v8/tools/gyp/v8.gyp:v8',
         '<(DEPTH)/webkit/support/webkit_support.gyp:webkit_support',
         '<(DEPTH)/third_party/zlib/zlib.gyp:minizip',
-        '<(webkit_src_dir)/Source/WebKit/chromium/WebKit.gyp:webkit',
+        '<(DEPTH)/third_party/WebKit/Source/WebKit/chromium/WebKit.gyp:webkit',
         'nw_resources',
       ],
       'include_dirs': [
         '<(DEPTH)',
         '<(DEPTH)/third_party/WebKit/Source',
-        '<(DEPTH)/third_party/WebKit/Source/WebKit/chromium/public',
+        '<(DEPTH)/third_party/WebKit/public/web',
         '<(SHARED_INTERMEDIATE_DIR)/webkit',
         '<(SHARED_INTERMEDIATE_DIR)/webkit/bindings',
       ],
@@ -56,6 +56,8 @@
         '-Wno-error=c++0x-compat',
       ],
       'sources': [
+        '<(DEPTH)/chrome/browser/chrome_process_finder_win.cc',
+        '<(DEPTH)/chrome/browser/chrome_process_finder_win.h',
         '<(DEPTH)/chrome/browser/platform_util_common_linux.cc',
         '<(DEPTH)/chrome/browser/platform_util_linux.cc',
         '<(DEPTH)/chrome/browser/platform_util_mac.mm',
@@ -91,9 +93,9 @@
         '<(DEPTH)/third_party/zlib/google/zip_reader.h',
         '<(DEPTH)/third_party/zlib/google/zip_internal.cc',
         '<(DEPTH)/third_party/zlib/google/zip_internal.h',
-        '<(DEPTH)/components/autofill/renderer/page_click_listener.h',
-        '<(DEPTH)/components/autofill/renderer/page_click_tracker.cc',
-        '<(DEPTH)/components/autofill/renderer/page_click_tracker.h',
+        '<(DEPTH)/components/autofill/content/renderer/page_click_listener.h',
+        '<(DEPTH)/components/autofill/content/renderer/page_click_tracker.cc',
+        '<(DEPTH)/components/autofill/content/renderer/page_click_tracker.h',
         '<(DEPTH)/chrome/renderer/static_v8_external_string_resource.cc',
         '<(DEPTH)/chrome/renderer/static_v8_external_string_resource.h',
         'src/api/api_messages.cc',
@@ -141,6 +143,9 @@
         'src/browser/app_controller_mac.mm',
         'src/browser/capture_page_helper.h',
         'src/browser/capture_page_helper.cc',
+        'src/browser/color_chooser_gtk.cc',
+        'src/browser/color_chooser_win.cc',
+        'src/browser/color_chooser_mac.mm',
         'src/browser/chrome_event_processing_window.mm',
         'src/browser/chrome_event_processing_window.h',
         'src/browser/file_select_helper.cc',
@@ -211,6 +216,8 @@
         'src/media/media_capture_devices_dispatcher.h',
         'src/media/media_stream_devices_controller.cc',
         'src/media/media_stream_devices_controller.h',
+        'src/net/app_protocol_handler.cc',
+        'src/net/app_protocol_handler.h',
         'src/net/clear_on_exit_policy.h',
         'src/net/clear_on_exit_policy.cc',
         'src/net/resource_request_job.cc',
@@ -268,6 +275,12 @@
             '<(DEPTH)/base/allocator/allocator.gyp:allocator',
           ],
         }],
+        ['(os_posix==1 and OS != "mac" and linux_use_tcmalloc==1)', {
+          'dependencies': [
+            # This is needed by content/app/content_main_runner.cc
+            '<(DEPTH)/base/allocator/allocator.gyp:allocator',
+          ],
+        }],
         ['toolkit_uses_gtk == 1', {
           'dependencies': [
             # For FT_Init_FreeType and friends.
@@ -277,6 +290,10 @@
           ],
         }],
         ['OS=="win"', {
+          'sources': [
+            'src/browser/color_chooser_dialog.cc',
+            'src/browser/color_chooser_dialog.h',
+          ],
           'resource_include_dirs': [
             '<(SHARED_INTERMEDIATE_DIR)/webkit',
           ],
@@ -305,6 +322,7 @@
       'type': 'none',
       'dependencies': [
         'generate_nw_resources',
+        'about_credits',
       ],
       'variables': {
         'grit_out_dir': '<(SHARED_INTERMEDIATE_DIR)/content',
@@ -332,6 +350,33 @@
             'grit_grd_file': 'src/resources/nw_resources.grd',
           },
           'includes': [ '../../build/grit_action.gypi' ],
+        },
+      ],
+    },
+    {
+      'target_name': 'about_credits',
+      'type': 'none',
+      'actions': [
+        {
+          'variables': {
+            'generator_path': '../../tools/licenses.py',
+            'about_credits_file': '<(PRODUCT_DIR)/credits.html',
+          },
+          'action_name': 'generate_about_credits',
+          'inputs': [
+            # TODO(phajdan.jr): make licenses.py print inputs too.
+            '<(generator_path)',
+          ],
+          'outputs': [
+            '<(about_credits_file)',
+          ],
+          'hard_dependency': 1,
+          'action': ['python',
+                     '<(generator_path)',
+                     'credits',
+                     '<(about_credits_file)',
+          ],
+          'message': 'Generating about:credits.',
         },
       ],
     },
@@ -378,6 +423,27 @@
       ],
     },
     {
+      'target_name': 'strip',
+      'type': 'none',
+      'actions': [
+        {
+          'action_name': 'strip_nw_binaries',
+          'inputs': [
+            '<(PRODUCT_DIR)/nw',
+          ],
+          'outputs': [
+            '<(PRODUCT_DIR)/strip_nw.stamp',
+          ],
+          'action': ['strip',
+                     '<@(_inputs)'],
+          'message': 'Stripping release executable',
+        },
+      ],
+      'dependencies': [
+        'nw',
+      ],
+    },
+    {
       'target_name': 'dist',
       'type': 'none',
       'actions': [
@@ -394,6 +460,16 @@
           ],
           'action': ['python', '<(package_script)'],
         },
+      ],
+      'dependencies': [
+        '<(DEPTH)/chrome/chrome.gyp:chromedriver2_server',
+      ],
+      'conditions': [
+        ['OS == "linux"', {
+          'dependencies': [
+            'strip',
+          ],
+        }],
       ],
     },
     {
@@ -454,7 +530,7 @@
             },
           },
         }],  # OS=="win"
-        ['OS == "win" or (toolkit_uses_gtk == 1 and selinux == 0)', {
+        ['OS == "win" or toolkit_uses_gtk == 1', {
           'dependencies': [
             '<(DEPTH)/sandbox/sandbox.gyp:sandbox',
           ],

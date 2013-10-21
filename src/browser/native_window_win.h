@@ -41,7 +41,7 @@ class NativeWindowWin : public NativeWindow,
                         public views::WidgetFocusChangeListener,
                         public views::WidgetDelegateView {
  public:
-  explicit NativeWindowWin(content::Shell* shell,
+  explicit NativeWindowWin(const base::WeakPtr<content::Shell>& shell,
                            base::DictionaryValue* manifest);
   virtual ~NativeWindowWin();
 
@@ -87,6 +87,8 @@ class NativeWindowWin : public NativeWindow,
   virtual void SetToolbarUrlEntry(const std::string& url) OVERRIDE;
   virtual void SetToolbarIsLoading(bool loading) OVERRIDE;
   virtual void RenderViewCreated(content::RenderViewHost *render_view_host) OVERRIDE;
+  virtual void SetInitialFocus(bool initial_focus) OVERRIDE;
+  virtual bool InitialFocus() OVERRIDE { return initial_focus_; }
 
   // WidgetDelegate implementation.
   virtual views::View* GetContentsView() OVERRIDE;
@@ -119,7 +121,7 @@ class NativeWindowWin : public NativeWindow,
   // views::View implementation.
   virtual void Layout() OVERRIDE;
   virtual void ViewHierarchyChanged(
-      bool is_add, views::View *parent, views::View *child) OVERRIDE;
+      const ViewHierarchyChangedDetails& details) OVERRIDE;
   virtual gfx::Size GetMinimumSize() OVERRIDE;
   virtual gfx::Size GetMaximumSize() OVERRIDE;
   virtual void OnFocus() OVERRIDE;
@@ -141,6 +143,7 @@ class NativeWindowWin : public NativeWindow,
 
   // Flags used to prevent sending extra events.
   bool is_minimized_;
+  bool is_maximized_;
   bool is_focus_;
   bool is_blur_;
 
@@ -153,6 +156,8 @@ class NativeWindowWin : public NativeWindow,
   std::string title_;
   gfx::Size minimum_size_;
   gfx::Size maximum_size_;
+
+  bool initial_focus_;
 
   DISALLOW_COPY_AND_ASSIGN(NativeWindowWin);
 };

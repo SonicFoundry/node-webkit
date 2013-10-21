@@ -47,6 +47,7 @@ class ShellContentBrowserClient : public ContentBrowserClient {
   virtual std::string GetDefaultDownloadName() OVERRIDE;
   virtual MediaObserver* GetMediaObserver() OVERRIDE;
   virtual void BrowserURLHandlerCreated(BrowserURLHandler* handler) OVERRIDE;
+  virtual bool IsHandledURL(const GURL& url) OVERRIDE;
   virtual bool ShouldTryToUseExistingProcessHost(
       BrowserContext* browser_context, const GURL& url) OVERRIDE;
   virtual bool IsSuitableHost(RenderProcessHost* process_host,
@@ -69,6 +70,19 @@ class ShellContentBrowserClient : public ContentBrowserClient {
       const base::FilePath& partition_path,
       bool in_memory,
       ProtocolHandlerMap* protocol_handlers) OVERRIDE;
+  virtual void AllowCertificateError(
+    int render_process_id,
+    int render_view_id,
+    int cert_error,
+    const net::SSLInfo& ssl_info,
+    const GURL& request_url,
+    ResourceType::Type resource_type,
+    bool overridable,
+    bool strict_enforcement,
+    const base::Callback<void(bool)>& callback,
+    content::CertificateRequestResultType* result) OVERRIDE;
+  virtual void GetAdditionalAllowedSchemesForFileSystem(
+      std::vector<std::string>* additional_schemes) OVERRIDE;
 
  private:
   ShellBrowserContext* ShellBrowserContextForBrowserContext(
