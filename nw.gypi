@@ -440,7 +440,7 @@
         },
       ],
       'dependencies': [
-        'nw',
+        '<(nw_product_short_name)',
       ],
     },
     {
