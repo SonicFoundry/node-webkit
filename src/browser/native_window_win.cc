@@ -303,12 +303,12 @@ void NativeWindowWin::Focus(bool focus) {
 void NativeWindowWin::Show() {
   VLOG(1) << "NativeWindowWin::Show(); initial_focus = " << initial_focus_;
 
-  if (is_maximized_)
+  if (is_maximized_) {
     window_->native_widget_private()->ShowWithWindowState(ui::SHOW_STATE_MAXIMIZED);
-  else if (!initial_focus_) {
+  } else if (!initial_focus_) {
     window_->set_focus_on_creation(false);
     window_->native_widget_private()->ShowWithWindowState(ui::SHOW_STATE_INACTIVE);
-  } else
+  } else {
     window_->native_widget_private()->Show();
   }
 
